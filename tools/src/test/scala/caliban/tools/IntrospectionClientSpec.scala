@@ -12,8 +12,14 @@ object IntrospectionClientSpec extends ZIOSpecDefault {
 
   case class MyObject(
     @GQLDeprecated("dep required") name: String,
-    @GQLDeprecated("dep optional") length: Option[Int]
+    @GQLDeprecated("dep optional") length: Option[Int],
+    otherObject:OtherObject
   )
+
+  @GQLDeprecated("dep type")
+  case class OtherObject(
+                          name: String,
+                        )
 
   case class Args(@GQLDeprecated("Use nameV2") name: Option[String] = Some("defaultValue"), nameV2: String)
 
@@ -25,7 +31,8 @@ object IntrospectionClientSpec extends ZIOSpecDefault {
     def getObject(@GQLDeprecated("foobar") args: Args): MyObject =
       MyObject(
         args.name.getOrElse(""),
-        Some(3)
+        Some(3),
+        OtherObject("")
       )
   }
 
