@@ -26,9 +26,9 @@ object RemoteSchemaSpec extends ZIOSpecDefault {
 
   case class Object(
     field: Int,
-    optionalField: Option[Float],
+    @GQLDeprecated("dep optional") optionalField: Option[Float],
     withDefault: Option[String] = Some("defaultValue"),
-    enumField: EnumType,
+    @GQLDeprecated("dep required") enumField: EnumType,
     unionField: UnionType
   )
 

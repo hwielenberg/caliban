@@ -6,19 +6,27 @@ import caliban.schema.Annotations._
 import caliban.schema.Schema.auto._
 import caliban.schema.ArgBuilder.auto._
 import zio.test._
-import zio.{Clock, durationInt}
+import zio.{ durationInt, Clock }
 
 object IntrospectionClientSpec extends ZIOSpecDefault {
 
-  case class Args(@GQLDeprecated("Use nameV2") name:Option[String] = Some("defaultValue"), nameV2:String)
+  case class MyObject(
+    @GQLDeprecated("dep required") name: String,
+    @GQLDeprecated("dep optional") length: Option[Int]
+  )
+
+  case class Args(@GQLDeprecated("Use nameV2") name: Option[String] = Some("defaultValue"), nameV2: String)
 
   case class Queries(
-                      getObject: Args => String
-                    )
+    getObject: Args => MyObject
+  )
 
   object Resolvers {
-    def getObject(@GQLDeprecated("foobar") args: Args): String =
-      args.name.getOrElse("")
+    def getObject(@GQLDeprecated("foobar") args: Args): MyObject =
+      MyObject(
+        args.name.getOrElse(""),
+        Some(3)
+      )
   }
 
   val queries = Queries(
@@ -34,17 +42,19 @@ object IntrospectionClientSpec extends ZIOSpecDefault {
   def spec = suite("IntrospectionClientSpec")(
     test("is isomorphic") {
       for {
-        _ <- api.runServer(
-          port = 8087,
-          apiPath = "/api/graphql",
-        ).fork
-        _ <- Clock.ClockLive.sleep(2.seconds)
+        _                 <- api
+                               .runServer(
+                                 port = 8087,
+                                 apiPath = "/api/graphql"
+                               )
+                               .fork
+        _                 <- Clock.ClockLive.sleep(2.seconds)
         introspectedSchema = SchemaLoader.fromIntrospection("http://localhost:8087/api/graphql", None)
-        codeSchema = SchemaLoader.fromCaliban(api)
-        res <- SchemaComparison.compare(
-            introspectedSchema,
-            codeSchema
-        )
+        codeSchema         = SchemaLoader.fromCaliban(api)
+        res               <- SchemaComparison.compare(
+                               introspectedSchema,
+                               codeSchema
+                             )
       } yield assertTrue(res.isEmpty, false)
     }
   )
